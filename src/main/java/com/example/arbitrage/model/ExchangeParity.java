@@ -4,27 +4,28 @@ import java.math.BigDecimal;
 
 //@Document(collection="ExchangeParity")
 public class ExchangeParity {
-    private String exchangeName;
+    private String exchangeNameFirst;
     private String currency;
-    private BigDecimal price;
+    private BigDecimal priceFirst;
 
-    public ExchangeParity(String exchangeName, String currency) {
-        this.exchangeName = exchangeName;
+    private String exchangeNameSecond;
+    private BigDecimal priceSecond;
+
+    public ExchangeParity(String exchangeNameFirst, String currency, BigDecimal priceFirst, String exchangeNameSecond, BigDecimal priceSecond) {
+        this.exchangeNameFirst = exchangeNameFirst;
         this.currency = currency;
+        this.priceFirst = priceFirst;
+        this.exchangeNameSecond = exchangeNameSecond;
+        this.priceSecond = priceSecond;
     }
 
-    public ExchangeParity(String exchangeName, String currency, BigDecimal price) {
-        this.exchangeName = exchangeName;
-        this.currency = currency;
-        this.price = price;
+
+    public String getExchangeNameFirst() {
+        return exchangeNameFirst;
     }
 
-    public String getExchangeName() {
-        return exchangeName;
-    }
-
-    public void setExchangeName(String exchangeName) {
-        this.exchangeName = exchangeName;
+    public void setExchangeNameFirst(String exchangeNameFirst) {
+        this.exchangeNameFirst = exchangeNameFirst;
     }
 
     public String getCurrency() {
@@ -35,11 +36,27 @@ public class ExchangeParity {
         this.currency = currency;
     }
 
-    public BigDecimal getPrice() {
-        return price;
+    public BigDecimal getPriceFirst() {
+        return priceFirst;
     }
 
-    public void setPrice(BigDecimal price) {
-        this.price = price;
+    public void setPriceFirst(BigDecimal priceFirst) {
+        this.priceFirst = priceFirst;
+    }
+
+    public String getExchangeNameSecond() {
+        return exchangeNameSecond;
+    }
+
+    public void setExchangeNameSecond(String exchangeNameSecond) {
+        this.exchangeNameSecond = exchangeNameSecond;
+    }
+
+    public BigDecimal getPriceSecond() {
+        return priceSecond;
+    }
+
+    public void setPriceSecond(BigDecimal priceSecond) {
+        this.priceSecond = priceSecond;
     }
 }

@@ -2,6 +2,9 @@ package com.example.arbitrage.Service.Internal;
 
 import com.example.arbitrage.Service.Interface.IParityCalculationService;
 
+import com.example.arbitrage.model.ExchangeParity;
+import com.example.arbitrage.model.MarketModel;
+import com.example.arbitrage.model.PriceNameMap;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHeaders;
 import org.apache.http.NameValuePair;
@@ -10,46 +13,93 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.couchbase.CouchbaseProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
+import java.math.BigDecimal;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+
 @Service
 public class ParityCalculationService implements IParityCalculationService {
     @Autowired
     private Environment env;
     @Autowired
     BinanceAPIService binanceAPIService;
-
     @Autowired
     MexcAPIService mexcAPIService;
+    @Autowired
+    BinanceTRAPIService binanceTRAPIService;
+
+    private final BigDecimal threshHold = new BigDecimal("10");
+    private final BigDecimal buyAmount = new BigDecimal("1000");
+
     @Override
-    public String getAllCurrency() {
-        String uri = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?start=1&limit=1000&convert=USD&sort=market_cap&sort_dir=desc&aux=cmc_rank,platform";
-        List<NameValuePair> paratmers = new ArrayList<NameValuePair>();
-        String result = null;
+    public List<ExchangeParity> getAllExchangeParity() {
+        List<ExchangeParity> buyableParities = new ArrayList<>();
+
         try {
-            result = makeAPICall(uri, paratmers);
-            //result = binanceAPIService.getAllCurrency();
-            //result = mexcAPIService.getAllCurrency();
+            MarketModel binance = new MarketModel("Binance");
+            MarketModel mexc = new MarketModel("mexc");
+            MarketModel binancetr = new MarketModel("binancetr");
+            // set currency price
+            binance.setCurrencyPricesMap(binanceAPIService.getAllCurrency());
+            mexc.setCurrencyPricesMap(mexcAPIService.getAllCurrency());
+            binancetr.setCurrencyPricesMap(binanceTRAPIService.getAllCurrency());
+
+            List<MarketModel> marketModelList = new ArrayList<>();
+            marketModelList.add(binance);
+            marketModelList.add(mexc);
+            marketModelList.add(binancetr);
+            buyableParities = calculateDifferentOfMarkets(marketModelList);
+
         } catch (Exception e) {
-            System.out.println("Error: Invalid URL " + e.toString());
+            System.out.println("Error: Invalid URL " + e);
         }
 
-        return result;
+        return buyableParities;
+    }
+
+    private List<ExchangeParity> calculateDifferentOfMarkets(List<MarketModel> marketModelList)
+    {
+        List<ExchangeParity> buyableParities = new ArrayList<>();
+        Map<String, List<PriceNameMap>> priceNameMap = new HashMap<>();
+        // Add all parity and price
+        for(MarketModel market : marketModelList)
+        {
+            String marketName = market.getName();
+            for(Map.Entry<String, BigDecimal> entry : market.getCurrencyPricesMap().entrySet())
+            {
+                String parityName = entry.getKey();
+                BigDecimal parityPrice = entry.getValue();
+                priceNameMap.computeIfAbsent(parityName, k-> new ArrayList<PriceNameMap>()).add(new PriceNameMap(marketName, parityPrice));
+            }
+        }
+
+        for(String key : priceNameMap.keySet())
+        {
+            List<PriceNameMap> priceNameList = priceNameMap.get(key);
+
+            for(int i = 0; i < priceNameList.size(); i++)
+            {
+                for(int j = i+1; j < priceNameList.size(); j++)
+                {
+                    PriceNameMap priceNameMap1 = priceNameList.get(i);
+                    PriceNameMap priceNameMap2 = priceNameList.get(j);
+                    BigDecimal priceDifferent = priceNameMap1.getPrice().subtract(priceNameMap2.getPrice());
+                    BigDecimal control = buyAmount.multiply(priceDifferent.abs()); //remove after test
+                    if(buyAmount.multiply(priceDifferent.abs()).compareTo(threshHold) > -1)
+                    {
+                        buyableParities.add(new ExchangeParity(priceNameMap1.getExchangeName(), key,
+                                priceNameMap1.getPrice(), priceNameMap2.getExchangeName(), priceNameMap2.getPrice()));
+                    }
+                }
+            }
+        }
+        return buyableParities;
     }
 
     public String makeAPICall(String uri, List<NameValuePair> parameters)

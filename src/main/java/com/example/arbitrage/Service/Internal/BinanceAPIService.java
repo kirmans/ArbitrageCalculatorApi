@@ -1,29 +1,31 @@
 package com.example.arbitrage.Service.Internal;
 
-import com.example.arbitrage.Service.Interface.IParityCalculationService;
+import com.example.arbitrage.Service.Interface.IMarketsApiService;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
-import java.net.ProtocolException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
-public class BinanceAPIService implements IParityCalculationService {
+public class BinanceAPIService implements IMarketsApiService {
     private final static  String apiEndpoint =  "https://api.binance.com/api/v3/ticker/price";
     private final static  String baseCurrency =  "USDT";
     @Override
-    public String getAllCurrency() {
+    public Map<String, BigDecimal> getAllCurrency() {
+        HttpURLConnection connection = null;
+        Map<String, BigDecimal> currencyPricesMap = new HashMap<>();
         try {
             URL url = new URL(apiEndpoint);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
 
-            int responseCode = connection.getResponseCode();
-
-            if (responseCode == HttpURLConnection.HTTP_OK) {
+            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                 StringBuilder response = new StringBuilder();
                 String line;
@@ -44,17 +46,17 @@ public class BinanceAPIService implements IParityCalculationService {
                         String symbol = parts[3];
                         String price = parts[7];
                         System.out.println(symbol + ": " + price);
+                        currencyPricesMap.put(symbol, new BigDecimal(price));
                     }
                 }
-            } else {
-                System.out.println("Request failed with status code: " + responseCode);
             }
 
-            connection.disconnect();
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            connection.disconnect();
         }
 
-        return "s";
+        return currencyPricesMap;
     }
 }
