@@ -39,7 +39,6 @@ public class BinanceTRAPIService implements IMarketsApiService {
                 if (symbol.contains(baseCurrency))
                 {
                     String price = jsonObject.getString("price");
-                    System.out.println("Symbol: " + symbol + ", Price: " + price);
                     currencyPricesMap.put(symbol, new BigDecimal(price));
                 }
             }

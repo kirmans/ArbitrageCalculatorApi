@@ -45,7 +45,6 @@ public class BinanceAPIService implements IMarketsApiService {
                         String[] parts = currency.split("\"");
                         String symbol = parts[3];
                         String price = parts[7];
-                        System.out.println(symbol + ": " + price);
                         currencyPricesMap.put(symbol, new BigDecimal(price));
                     }
                 }

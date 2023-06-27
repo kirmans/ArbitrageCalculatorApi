@@ -50,7 +50,6 @@ public class MexcAPIService implements IMarketsApiService {
                         String[] parts = currency.split("\"");
                         String symbol = parts[1];
                         String price = parts[5];
-                        System.out.println(symbol + ": " + price);
                     currencyPricesMap.put(symbol, new BigDecimal(price));
                     }
                 }
