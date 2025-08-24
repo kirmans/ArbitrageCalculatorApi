@@ -17,6 +17,7 @@ public class ParityController {
     @Autowired
     IParityCalculationService parityCalculationService;
     @GetMapping("/user")
+
     public ResponseEntity<List<ExchangeParity>> getAllDifferentParity() {
         List<ExchangeParity> exhaParityList = parityCalculationService.getAllExchangeParity();
 
